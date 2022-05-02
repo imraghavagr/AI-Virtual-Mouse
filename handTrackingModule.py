@@ -15,7 +15,7 @@ class handDetector():
         self.mpHands = mp.solutions.hands
         self.hands = self.mpHands.Hands(self.mode, self.maxHands,self.modelC, self.detectionCon, self.trackCon)
         self.mpDraw = mp.solutions.drawing_utils
-
+        self.tipIds = [4, 8, 12, 16, 20] #4- thumb tip, 8- index tip, 12 - middle finger tip, 16-ringFingerTip,20-PinkyTip
     def findHands(self, img, draw=True):
         imgRGB = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
         self.result = self.hands.process(imgRGB)
@@ -29,18 +29,32 @@ class handDetector():
         return img
 
     def findPosition(self, img, handNo=0, draw=True):
-        PosList = []
+        xList = []
+        yList = []
+        bbox = []
+        self.lmList = []
         if self.result.multi_hand_landmarks:
             myHand = self.result.multi_hand_landmarks[handNo]
             for id, lm in enumerate(myHand.landmark):
+                # print(id, lm)
                 h, w, c = img.shape
                 cx, cy = int(lm.x * w), int(lm.y * h)
-                PosList.append([id, cx, cy])
-
+                xList.append(cx)
+                yList.append(cy)
+                # print(id, cx, cy)
+                self.lmList.append([id, cx, cy])
                 if draw:
-                    cv2.circle(img, (cx, cy), 10, (255, 255, 255), cv2.FILLED)
-
-        return PosList
+                    cv2.circle(img, (cx, cy), 5, (255, 0, 255), cv2.FILLED)
+ 
+            xmin, xmax = min(xList), max(xList)
+            ymin, ymax = min(yList), max(yList)
+            bbox = xmin, ymin, xmax, ymax
+ 
+            if draw:
+                cv2.rectangle(img, (xmin - 20, ymin - 20), (xmax + 20, ymax + 20),
+                              (0, 255, 0), 2)
+ 
+        return self.lmList, bbox
 
     def fingersUp(self):
         fingers = []
